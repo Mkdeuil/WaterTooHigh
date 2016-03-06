@@ -30,7 +30,7 @@ int ledState = LOW;
 
 unsigned long previousMillis1 = 0;  
 unsigned long previousMillis2 = 0; // will store last time LED was updated
-
+unsigned long previousMillis3 = 0;
 // constants won't change :
 const long interval = 1000; 
 
@@ -76,7 +76,6 @@ Process p;
        { unsigned long currentMillis = millis();
  
   if(currentMillis - previousMillis1 >= interval) {
-    // save the last time you blinked the LED 
     previousMillis1 = currentMillis;   
         if (ledState == LOW)
       ledState = HIGH;
@@ -86,4 +85,24 @@ Process p;
  
 }
 
+
+// pour le sensor de mouvement
+
+  // read the value from the sensor:
+ { if (digitalRead(pirPin) == HIGH)
+  {unsigned long currentMillis = millis();
+    if(currentMillis - previousMillis3 >= interval) {
+  previousMillis3 = currentMillis; }
+    if (now > (lastSend + minSecsBetweenEmails * 1000l))
+    {
+    Process p;
+  p.runShellCommand("cat /root/test.txt | ssmtp Markxdeuil@gmail.com");
+  lastSend = now;
+    }
+    else
+    {
+      Serial.println("Too soon");
+    }
+      }
+  }
 }
