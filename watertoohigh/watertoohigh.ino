@@ -1,108 +1,73 @@
-/*
-  Analog Input
- Demonstrates analog input by reading the sharp distance sensor on analog pin 0 and
- turning on and off a light emitting diode(LED)  connected to digital pin 13.
- The amount of time the LED will be on and off depends on
- the value obtained by analogRead().
 
-
- The circuit:
-To use, connect black wire to ground, red wire to 5V and white wire to analog input. 
-The analog voltage out will range from 3V when an object is only 4" (10 cm) away and 0.4V when the object is 32" (80 cm) away
- 
- * LED anode (long leg) attached to digital output 13
- * LED cathode (short leg) attached to ground
- * Note: because most Arduinos have a built-in LED attached
- to pin 13 on the board, the LED is optional.
-
- http://arduino.cc/en/Tutorial/AnalogInput
-
- */
 #include <FileIO.h>
 #include <Process.h>
 
-int pirPin = 7;
-int sensorPin = A0;    // select the input pin for the potentiometer
-const int ledPin =  13;      // select the pin for the LED
-int sensorValue = 0;  // variable to store the value coming from the sensor
-int minSecsBetweenEmails = 60; // 1 min
+const int movementPin = 7;
+const int waterLevelPin = A0;
+const int ledPinBlue =  11;
+const int ledPinGreen =  10;
+const int ledPinRed =  9;
+int waterLevelValue = 0;
+long minMillisSecBetweenEmails = 60000; // 60 sec between emails
 int ledState = LOW;
+long now = millis();
 
-unsigned long previousMillis1 = 0;  
-unsigned long previousMillis2 = 0; // will store last time LED was updated
-unsigned long previousMillis3 = 0;
-// constants won't change :
-const long interval = 1000; 
+unsigned long previousMillis1 = 0;
+unsigned long previousMillis2 = 0;
+const long interval = 1000;
 
-long lastSend = -minSecsBetweenEmails * 1000l;
-#include <Console.h>
+long lastSendWater = -minMillisSecBetweenEmails;
+long lastSendMovement = -minMillisSecBetweenEmails;
 
 void setup() {
-  // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
-  // declare the ledPin as an OUTPUT:
-  pinMode(ledPin, OUTPUT);
-  pinMode(pirPin, INPUT);
+  pinMode(ledPinBlue, OUTPUT);
+  pinMode(ledPinGreen, OUTPUT);
+  pinMode(ledPinRed, OUTPUT);
+  pinMode(movementPin, INPUT);
   Bridge.begin();
-  Console.begin();
-  while(!Console);
   FileSystem.begin();
 }
 
 void loop() {
   long now = millis();
-  // read the value from the sensor:
-  sensorValue = analogRead(sensorPin);
-  // print out the value you read:
-  Console.println(sensorValue);
-  if (sensorValue > 500  )
-    {unsigned long currentMillis = millis();
- 
-  if(currentMillis - previousMillis2 >= interval) {
-  previousMillis2 = currentMillis; }
-    if (now > (lastSend + minSecsBetweenEmails * 1000l))
-    {
-Process p;
-  p.runShellCommand("cat /root/watertoohigh.txt | ssmtp Markxdeuil@gmail.com");
-  lastSend = now;
-    }
-    else
-    {
-  Serial.println("Too soon");
+  if (now - previousMillis1 >= interval) {
+    waterLevelValue = analogRead(waterLevelPin);
+    //Serial.print("waterLevelValue ");
+    Serial.println(waterLevelValue-250); // Enlevé 250 pour deplacer 0-500 à -250 to +250 pour mieux afficher sur le plotter (graphique dans Tools > Serial Plotter).
+    if (waterLevelValue > 500  ) {
+      // Tes dans marde, ya de eau
+      digitalWrite(ledPinBlue, HIGH);
+      digitalWrite(ledPinGreen, HIGH);
+      digitalWrite(ledPinRed, LOW);
+      if (now > (lastSendWater + minMillisSecBetweenEmails)) {
+        Process p;
+        p.runShellCommand("cat /root/watertoohigh.txt | ssmtp Markxdeuil@gmail.com");
+        lastSendWater = now;
+      } else {
+        Serial.println("Too soon");
       }
-  }
-  {
-    if (sensorValue < 500  )
-       { unsigned long currentMillis = millis();
- 
-  if(currentMillis - previousMillis1 >= interval) {
-    previousMillis1 = currentMillis;   
-        if (ledState == LOW)
-      ledState = HIGH;
-    else
-      ledState = LOW;
-  digitalWrite(ledPin, ledState);}}
- 
-}
-
-
-// pour le sensor de mouvement
-
-  // read the value from the sensor:
- { if (digitalRead(pirPin) == HIGH)
-  {unsigned long currentMillis = millis();
-    if(currentMillis - previousMillis3 >= interval) {
-  previousMillis3 = currentMillis; }
-    if (now > (lastSend + minSecsBetweenEmails * 1000l))
-    {
-    Process p;
-  p.runShellCommand("cat /root/test.txt | ssmtp Markxdeuil@gmail.com");
-  lastSend = now;
-    }
-    else
-    {
-      Serial.println("Too soon");
-    }
+    } else {
+      // Flash les lumieres blue et verte, water level OK
+      digitalWrite(ledPinRed, HIGH);
+      if (ledState == LOW) {
+        ledState = HIGH;
+      } else {
+        ledState = LOW;
       }
+      digitalWrite(ledPinBlue, ledState);
+      digitalWrite(ledPinGreen, !ledState);
+    }
+    // pour le sensor de mouvement
+    if (digitalRead(movementPin) == HIGH) {
+      if (now > (lastSendMovement + minMillisSecBetweenEmails)) {
+        Process p;
+        p.runShellCommand("cat /root/test.txt | ssmtp Markxdeuil@gmail.com");
+        lastSendMovement = now;
+      } else {
+        Serial.println("Too soon");
+      }
+    }
+    previousMillis1 = now;
   }
 }
