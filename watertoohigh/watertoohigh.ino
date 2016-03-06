@@ -23,9 +23,16 @@ The analog voltage out will range from 3V when an object is only 4" (10 cm) away
 
 int pirPin = 7;
 int sensorPin = A0;    // select the input pin for the potentiometer
-int ledPin = 13;      // select the pin for the LED
+const int ledPin =  13;      // select the pin for the LED
 int sensorValue = 0;  // variable to store the value coming from the sensor
 int minSecsBetweenEmails = 60; // 1 min
+int ledState = LOW;
+
+unsigned long previousMillis1 = 0;  
+unsigned long previousMillis2 = 0; // will store last time LED was updated
+
+// constants won't change :
+const long interval = 1000; 
 
 long lastSend = -minSecsBetweenEmails * 1000l;
 #include <Console.h>
@@ -49,7 +56,10 @@ void loop() {
   // print out the value you read:
   Console.println(sensorValue);
   if (sensorValue > 500  )
-    {
+    {unsigned long currentMillis = millis();
+ 
+  if(currentMillis - previousMillis2 >= interval) {
+  previousMillis2 = currentMillis; }
     if (now > (lastSend + minSecsBetweenEmails * 1000l))
     {
 Process p;
@@ -63,8 +73,17 @@ Process p;
   }
   {
     if (sensorValue < 500  )
-  digitalWrite(ledPin, HIGH);
-  delay(sensorValue);
-  digitalWrite(ledPin, LOW);}
-  delay(sensorValue);
+       { unsigned long currentMillis = millis();
+ 
+  if(currentMillis - previousMillis1 >= interval) {
+    // save the last time you blinked the LED 
+    previousMillis1 = currentMillis;   
+        if (ledState == LOW)
+      ledState = HIGH;
+    else
+      ledState = LOW;
+  digitalWrite(ledPin, ledState);}}
+ 
+}
+
 }
