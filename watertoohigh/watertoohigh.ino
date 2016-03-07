@@ -1,71 +1,71 @@
-
-#include <FileIO.h>
 #include <Process.h>
+#include <RGB.h>
+
+RGB statusLED;
+const int LED_RED_PIN =  9;
+const int LED_GRN_PIN =  10;
+const int LED_BLU_PIN =  11;
 
 const int movementPin = 7;
 const int waterLevelPin = A0;
-const int ledPinBlue =  11;
-const int ledPinGreen =  10;
-const int ledPinRed =  9;
+
 int waterLevelValue = 0;
 long minMillisSecBetweenEmails = 60000; // 60 sec between emails
-int ledState = LOW;
+bool ledState = true;
 long now = millis();
 
 unsigned long previousMillis1 = 0;
-unsigned long previousMillis2 = 0;
 const long interval = 1000;
 
 long lastSendWater = -minMillisSecBetweenEmails;
 long lastSendMovement = -minMillisSecBetweenEmails;
 
+Process p;
+
+
 void setup() {
   Serial.begin(9600);
-  pinMode(ledPinBlue, OUTPUT);
-  pinMode(ledPinGreen, OUTPUT);
-  pinMode(ledPinRed, OUTPUT);
+
+  ///--- Initialize Status LED and define digital pins: R, G, B ---///
+  statusLED.init(LED_RED_PIN, LED_GRN_PIN, LED_BLU_PIN);
+
   pinMode(movementPin, INPUT);
   Bridge.begin();
-  FileSystem.begin();
 }
 
 void loop() {
   long now = millis();
   if (now - previousMillis1 >= interval) {
     waterLevelValue = analogRead(waterLevelPin);
+    
     //Serial.print("waterLevelValue ");
     Serial.println(waterLevelValue-250); // Enlevé 250 pour deplacer 0-500 à -250 to +250 pour mieux afficher sur le plotter (graphique dans Tools > Serial Plotter).
+    
     if (waterLevelValue > 500  ) {
-      // Tes dans marde, ya de eau
-      digitalWrite(ledPinBlue, HIGH);
-      digitalWrite(ledPinGreen, HIGH);
-      digitalWrite(ledPinRed, LOW);
-      if (now > (lastSendWater + minMillisSecBetweenEmails)) {
-        Process p;
+
+      ///--- Tes dans marde, ya de eau (Status RED) ---///
+      statusLED.setColor(255, 0, 0);
+
+      if (now > (lastSendWater + minMillisSecBetweenEmails)) { 
         p.runShellCommand("cat /root/watertoohigh.txt | ssmtp Markxdeuil@gmail.com");
         lastSendWater = now;
-      } else {
-        Serial.println("Too soon");
       }
+      
     } else {
-      // Flash les lumieres blue et verte, water level OK
-      digitalWrite(ledPinRed, HIGH);
-      if (ledState == LOW) {
-        ledState = HIGH;
+      
+      // Flash les lumieres bleu et verte, water level OK
+      if (ledState) {
+        statusLED.setColor(0, 255, 0);
+        ledState = false;
       } else {
-        ledState = LOW;
+        statusLED.setColor(0, 0, 255);
       }
-      digitalWrite(ledPinBlue, ledState);
-      digitalWrite(ledPinGreen, !ledState);
     }
     // pour le sensor de mouvement
     if (digitalRead(movementPin) == HIGH) {
       if (now > (lastSendMovement + minMillisSecBetweenEmails)) {
-        Process p;
         p.runShellCommand("cat /root/test.txt | ssmtp Markxdeuil@gmail.com");
         lastSendMovement = now;
-      } else {
-        Serial.println("Too soon");
       }
     }
     previousMillis1 = now;
