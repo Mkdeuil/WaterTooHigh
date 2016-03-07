@@ -2,7 +2,10 @@
 
 http://www.binarypower.com/2014/07/use-arduino-yun-to-send-emails-simple.html
 
-## Install apps needed
+## Get libraries
+Copy latest RGB.h from https://github.com/xTianRoy/RGB.git to your Arduino libraries folder (on computer).
+
+## Install apps needed (linux)
 ```
 opkg update
 opkg install ssmtp
