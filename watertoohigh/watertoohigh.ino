@@ -2,7 +2,7 @@
 #include <RGB.h>
 
 RGB statusLED;
-const int LED_RED_PIN =  13;
+const int LED_RED_PIN =  9;
 const int LED_GRN_PIN =  10;
 const int LED_BLU_PIN =  11;
 
